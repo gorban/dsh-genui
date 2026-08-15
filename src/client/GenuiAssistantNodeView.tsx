@@ -34,9 +34,10 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
     () => (owner === undefined ? undefined : fileMentions(owner)),
     [fileMentions, owner],
   )
+  const translate = typeof t === 'function' ? t : ((key: string) => key)
   const codeLabels = useMemo(
-    () => ({ copyLabel: t('copy'), copiedLabel: t('copied') }),
-    [t],
+    () => ({ copyLabel: translate('copy'), copiedLabel: translate('copied') }),
+    [translate],
   )
   const customActions = useMemo<Record<string, ICustomAction>>(() => ({
     continueChat: {
@@ -59,7 +60,7 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
   if (!hasVisible) return null
 
   const imageLoader = loadImage
-    ?? (() => Promise.reject(new Error(String(t('image.serviceUnavailable')))))
+    ?? (() => Promise.reject(new Error(String(translate('image.serviceUnavailable')))))
   const rendered: ReactNode[] = []
   const last = blocks.length - 1
   for (let i = 0; i < blocks.length; i++) {
@@ -110,9 +111,9 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
         rendered.push(
           <JsonBlock
             key={i}
-            label={t('message.unknownBlock')}
+            label={translate('message.unknownBlock')}
             payload={'block' in block ? block.block : block}
-            truncatedLabel={total => t('json.truncated', { total })}
+            truncatedLabel={total => translate('json.truncated', { total })}
           />,
         )
     }
@@ -122,7 +123,7 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
     <div className={css.root} data-streaming={streaming || undefined} data-dsh-genui-assistant="">
       <div className={css.body}>
         {rendered}
-        {interrupted ? <span className={css.stopped}>{t('message.stopped')}</span> : null}
+        {interrupted ? <span className={css.stopped}>{translate('message.stopped')}</span> : null}
       </div>
     </div>
   )

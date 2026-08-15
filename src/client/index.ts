@@ -12,9 +12,14 @@ export const inject = ['slots']
  * @param ctx - browser Cordis context with the slot service.
  */
 export function apply(ctx: Context): void {
+  // Reuse the conversation dictionary so `t('copy')` / `t('message.stopped')`
+  // resolve. Omitting `locale` leaves `t` undefined and the view crashes;
+  // the slot then abdicates to the built-in assistant-step (schemaJson shows
+  // as a Markdown code fence — the failure mode users hit).
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
     name: 'conversation.chat.node',
     key: 'assistant-step',
     priority: ASSISTANT_STEP_PRIORITY,
+    locale: 'conversation',
   }, GenuiAssistantNodeView))
 }

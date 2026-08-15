@@ -35,7 +35,7 @@ export interface GenuiAssistantNodeViewProps {
   }
   readonly loadImage?: ((attachment: never) => Promise<string>) | undefined
   readonly fileMentions: (owner: TurnTailOwner) => MarkdownFileMentions | undefined
-  readonly t: (key: string, params?: Record<string, unknown>) => string
+  readonly t?: ((key: string, params?: Record<string, unknown>) => string) | undefined
   readonly useTurnData: (key: string) => {
     readonly closing?: { readonly finalNode: { readonly seq: number } }
   } | undefined
