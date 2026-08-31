@@ -7,20 +7,21 @@ import { MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ICustomAction } from '@opentiny/genui-sdk-vue/renderer'
 import { GenuiVueCard } from './GenuiVueCard.tsx'
+import type { GenuiMarkdownLabels } from './markdown-labels.ts'
 import { splitAssistantText } from './split-assistant-text.ts'
 import css from './genui-assistant.module.css'
 
 export interface GenuiTextBodyProps {
   text: string
   streaming: boolean
-  codeLabels: { copyLabel: string; copiedLabel: string }
+  labels: GenuiMarkdownLabels
   mentions?: MarkdownFileMentions | undefined
   customActions?: Record<string, ICustomAction> | undefined
 }
 
 /** Render markdown segments and schemaJson fences as GenUI cards. */
 export const GenuiTextBody = memo(function GenuiTextBody({
-  text, streaming, codeLabels, mentions, customActions,
+  text, streaming, labels, mentions, customActions,
 }: GenuiTextBodyProps) {
   const segments = useMemo(() => splitAssistantText(text, streaming), [text, streaming])
   const nodes: ReactNode[] = []
@@ -34,7 +35,7 @@ export const GenuiTextBody = memo(function GenuiTextBody({
           key={`md-${i}`}
           text={segment.text}
           streaming={streaming}
-          codeLabels={codeLabels}
+          labels={labels}
           fileMentions={mentions}
         />,
       )

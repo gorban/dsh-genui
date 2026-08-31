@@ -3,12 +3,13 @@
  * otherwise; lightweight reasoning / image / unknown fallbacks so shadowing
  * does not drop those block kinds.
  */
-import { memo, useEffect, useMemo, useState } from 'react'
+import { Fragment, memo, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ICustomAction } from '@opentiny/genui-sdk-vue/renderer'
 import type { GenuiAssistantNodeViewProps } from './assistant-props.ts'
 import { GenuiTextBody } from './GenuiTextBody.tsx'
+import { markdownLabels } from './markdown-labels.ts'
 import css from './genui-assistant.module.css'
 
 /** Priority below the built-in assistant-step (0) so this entry wins. */
@@ -16,7 +17,7 @@ export const ASSISTANT_STEP_PRIORITY = -1
 
 /** Keyed Chat Node view that replaces the stock assistant bubble. */
 export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
-  node, loadImage, fileMentions, t, useTurnData, openFile, inputActions,
+  node, renderMessageImages, fileMentions, t, useTurnData, openFile, turnProcess, inputActions,
 }: GenuiAssistantNodeViewProps) {
   const data = node.data
   const streaming = data.status === 'running'
@@ -34,11 +35,12 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
     () => (owner === undefined ? undefined : fileMentions(owner)),
     [fileMentions, owner],
   )
-  const translate = typeof t === 'function' ? t : ((key: string) => key)
-  const codeLabels = useMemo(
-    () => ({ copyLabel: translate('copy'), copiedLabel: translate('copied') }),
-    [translate],
-  )
+  const labels = useMemo(() => markdownLabels(t), [t])
+  const reasoningHidden = turnProcess !== undefined
+    && turnProcess.foldable
+    && turnProcess.spec.answerStep === data.step
+    && turnProcess.spec.inlineReasoning
+    && !turnProcess.open
   const customActions = useMemo<Record<string, ICustomAction>>(() => ({
     continueChat: {
       name: 'continueChat',
@@ -68,8 +70,6 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
     || blocks.some(block => block.kind !== 'tool-call')
   if (!hasVisible) return null
 
-  const imageLoader = loadImage
-    ?? (() => Promise.reject(new Error(String(translate('image.serviceUnavailable')))))
   const rendered: ReactNode[] = []
   const last = blocks.length - 1
   for (let i = 0; i < blocks.length; i++) {
@@ -82,17 +82,22 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
             key={i}
             text={block.text}
             streaming={streaming}
-            codeLabels={codeLabels}
+            labels={labels}
             mentions={mentions}
             customActions={customActions}
           />,
         )
         break
       case 'reasoning':
+        if (reasoningHidden) break
         rendered.push(
           <details key={i} className={css.think} open={streaming && i === last}>
-            <summary>Thinking</summary>
-            <MarkdownText text={block.text} streaming={streaming && i === last} codeLabels={codeLabels} />
+            <summary>{t('message.think')}</summary>
+            <MarkdownText
+              text={block.text}
+              streaming={streaming && i === last}
+              labels={labels}
+            />
           </details>,
         )
         break
@@ -106,11 +111,12 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
           i += 1
         }
         rendered.push(
-          <div key={start} className={css.images}>
-            {group.map((image, index) => (
-              <SessionImage key={index} attachment={image} load={imageLoader} />
-            ))}
-          </div>,
+          <Fragment key={start}>
+            {renderMessageImages({
+              images: group.map(({ attachment }) => ({ attachment })),
+              align: 'start',
+            })}
+          </Fragment>,
         )
         break
       }
@@ -120,9 +126,9 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
         rendered.push(
           <JsonBlock
             key={i}
-            label={translate('message.unknownBlock')}
+            label={t('message.unknownBlock')}
             payload={'block' in block ? block.block : block}
-            truncatedLabel={total => translate('json.truncated', { total })}
+            truncatedLabel={total => t('json.truncated', { total })}
           />,
         )
     }
@@ -132,27 +138,8 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
     <div className={css.root} data-streaming={streaming || undefined} data-dsh-genui-assistant="">
       <div className={css.body}>
         {rendered}
-        {interrupted ? <span className={css.stopped}>{translate('message.stopped')}</span> : null}
+        {interrupted ? <span className={css.stopped}>{t('message.stopped')}</span> : null}
       </div>
     </div>
   )
 })
-
-function SessionImage({
-  attachment,
-  load,
-}: {
-  attachment: unknown
-  load: (attachment: never) => Promise<string>
-}) {
-  const [url, setUrl] = useState<string | undefined>(undefined)
-  useEffect(() => {
-    let cancelled = false
-    void load(attachment as never)
-      .then((next) => { if (!cancelled) setUrl(next) })
-      .catch(() => { if (!cancelled) setUrl(undefined) })
-    return () => { cancelled = true }
-  }, [attachment, load])
-  if (url === undefined) return null
-  return <img className={css.image} src={url} alt="" />
-}
