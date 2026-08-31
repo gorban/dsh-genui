@@ -1,13 +1,12 @@
 /**
- * Mixed markdown + GenUI card body for one assistant text block.
+ * Mixed markdown + Vue GenUI card body for one assistant text block.
  */
 import { memo, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
-import { GenuiConfigProvider, GenuiRenderer } from '@opentiny/genui-sdk-react'
-import { materials } from '@opentiny/genui-sdk-materials-react-antd/materials'
-import type { ICustomAction } from '@opentiny/genui-sdk-react'
+import type { ICustomAction } from '@opentiny/genui-sdk-vue/renderer'
+import { GenuiVueCard } from './GenuiVueCard.tsx'
 import { splitAssistantText } from './split-assistant-text.ts'
 import css from './genui-assistant.module.css'
 
@@ -42,16 +41,14 @@ export const GenuiTextBody = memo(function GenuiTextBody({
       continue
     }
     nodes.push(
-      <div key={`schema-${i}`} className={css.card} data-dsh-genui-card="">
-        <GenuiConfigProvider materials={materials}>
-          <GenuiRenderer
-            content={segment.text}
-            generating={streaming && !segment.complete}
-            isJsonComplete={segment.complete}
-            customActions={customActions}
-          />
-        </GenuiConfigProvider>
-      </div>,
+      <GenuiVueCard
+        key={`schema-${i}`}
+        className={css.card}
+        content={segment.text}
+        generating={streaming && !segment.complete}
+        isJsonComplete={segment.complete}
+        customActions={customActions}
+      />,
     )
   }
   return <>{nodes}</>

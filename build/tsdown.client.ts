@@ -14,7 +14,7 @@
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { basename, dirname, relative, resolve as resolvePath, sep } from 'node:path'
+import { dirname, relative, resolve as resolvePath, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { UserConfig } from 'tsdown'
 import { transform } from 'lightningcss'
@@ -27,6 +27,25 @@ import { PLATFORM_MODULES } from './web-platform.ts'
  */
 const CSS_VIRTUAL_PREFIX = '\0dsh-css:'
 const CSS_VIRTUAL_SUFFIX = '.mjs'
+const BINARY_ASSET = /\.(png|jpe?g|gif|webp|svg|woff2?|ttf|eot)$/i
+
+const ASSET_MIME: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  woff: 'font/woff',
+  woff2: 'font/woff2',
+  ttf: 'font/ttf',
+  eot: 'application/vnd.ms-fontobject',
+}
+
+function mimeForAsset(fileId: string): string {
+  const ext = fileId.split('.').pop()?.toLowerCase() ?? ''
+  return ASSET_MIME[ext] ?? 'application/octet-stream'
+}
 
 /**
  * Wire/type layers a client bundle may inline: browser-safe contract surfaces
@@ -260,41 +279,66 @@ function clientConfig(id: string, entry: string, portableCssModuleIds: boolean):
         )
       },
     }, {
+      name: 'dsh-binary-assets-inline',
+      async load(id: string) {
+        const fileId = id.split('?')[0] ?? id
+        if (!BINARY_ASSET.test(fileId) || !existsSync(fileId)) return null
+        const data = await readFile(fileId)
+        return `export default ${JSON.stringify(`data:${mimeForAsset(fileId)};base64,${data.toString('base64')}`)};`
+      },
+    }, {
       name: 'dsh-css-modules-inline',
       resolveId(source: string, importer: string | undefined) {
-        if (!source.endsWith('.module.css')) return null
-        const abs = importer !== undefined ? sourceAssetPath(source, importer) : source
+        const specifier = source.split('?')[0] ?? source
+        if (!specifier.endsWith('.css')) return null
+        const abs = resolveCssFile(specifier, importer)
+        if (abs === undefined) return null
         const sourceId = portableCssModuleIds
           ? relative(REPOSITORY_ROOT, abs).split(sep).join('/')
           : abs
-        const virtualId = CSS_VIRTUAL_PREFIX + sourceId + CSS_VIRTUAL_SUFFIX
+        const kind = specifier.endsWith('.module.css') ? 'module' : 'global'
+        const virtualId = `${CSS_VIRTUAL_PREFIX}${kind}:${sourceId}${CSS_VIRTUAL_SUFFIX}`
         cssFiles.set(virtualId, abs)
         return virtualId
       },
       async load(virtualId: string) {
         if (!virtualId.startsWith(CSS_VIRTUAL_PREFIX)) return null
-        const sourceId = virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length)
+        const rest = virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length)
+        const isModule = rest.startsWith('module:')
+        const sourceId = rest.slice(isModule ? 'module:'.length : 'global:'.length)
         const fileId = cssFiles.get(virtualId) ?? sourceId
         // The virtual id otherwise hides the physical stylesheet from Rolldown's watch graph.
         this.addWatchFile(fileId)
         const source = await readFile(fileId)
-        const { code, exports: cssExports } = transform({
-          filename: portableCssModuleIds ? sourceId : fileId,
-          code: source,
-          cssModules: { pattern: '[hash]_[local]' },
-          minify: true,
-        })
-        const classMap: Record<string, string> = {}
-        // Sort deterministically: lightningcss's cssExports iteration order is
-        // process-dependent (hash-map seeds), which would otherwise churn the
-        // emitted lib/client.js on every rebuild.
-        for (const [local, exp] of Object.entries(cssExports ?? {}).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
-          classMap[local] = exp.name
+        let cssText: string
+        let classMap: Record<string, string> = {}
+        try {
+          const { code, exports: cssExports } = transform({
+            filename: portableCssModuleIds ? sourceId : fileId,
+            code: source,
+            cssModules: isModule ? { pattern: '[hash]_[local]' } : undefined,
+            minify: true,
+          })
+          cssText = code.toString()
+          // Sort deterministically: lightningcss's cssExports iteration order is
+          // process-dependent (hash-map seeds), which would otherwise churn the
+          // emitted lib/client.js on every rebuild.
+          if (isModule) {
+            for (const [local, exp] of Object.entries(cssExports ?? {}).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
+              classMap[local] = exp.name
+            }
+          }
+        } catch {
+          // TinyRobot (and similar) ship CSS that lightningcss cannot parse; inject raw.
+          if (isModule) {
+            throw new Error(`css modules transform failed for ${fileId}`)
+          }
+          cssText = source.toString('utf8')
         }
         // One <style data-plugin> per module file; idempotent under re-evaluation.
         return [
-          `const css = ${JSON.stringify(code.toString())};`,
-          `const tagId = ${JSON.stringify(`${id}/${basename(sourceId)}`)};`,
+          `const css = ${JSON.stringify(cssText)};`,
+          `const tagId = ${JSON.stringify(`${id}/${sourceId.split(sep).join('/')}`)};`,
           'if (typeof document !== \'undefined\' && document.querySelector(\'style[data-plugin-css=\' + JSON.stringify(tagId) + \']\') === null) {',
           '  const tag = document.createElement(\'style\');',
           `  tag.dataset.plugin = ${JSON.stringify(id)};`,
@@ -328,4 +372,18 @@ function sourceAssetPath(source: string, importer: string): string {
   const boundary = emitted.indexOf(marker)
   if (boundary < 0) return emitted
   return resolvePath(emitted.slice(0, boundary), 'src', emitted.slice(boundary + marker.length))
+}
+
+/** Resolve a CSS specifier: package names via Node, relatives via the importer. */
+function resolveCssFile(specifier: string, importer: string | undefined): string | undefined {
+  const relativeImport = specifier.startsWith('.') || specifier.startsWith('/')
+  if (relativeImport) {
+    return importer !== undefined ? sourceAssetPath(specifier, importer) : specifier
+  }
+  const from = importer !== undefined && existsSync(importer) ? importer : fileURLToPath(import.meta.url)
+  try {
+    return createRequire(from).resolve(specifier)
+  } catch {
+    return undefined
+  }
 }

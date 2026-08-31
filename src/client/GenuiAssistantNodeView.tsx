@@ -6,7 +6,7 @@
 import { memo, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ICustomAction } from '@opentiny/genui-sdk-react'
+import type { ICustomAction } from '@opentiny/genui-sdk-vue/renderer'
 import type { GenuiAssistantNodeViewProps } from './assistant-props.ts'
 import { GenuiTextBody } from './GenuiTextBody.tsx'
 import css from './genui-assistant.module.css'

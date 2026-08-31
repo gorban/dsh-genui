@@ -13,7 +13,9 @@
 }
 
 .card {
-  /* Isolate GenUI / antd from harness chrome where possible. */
+  /* Isolate GenUI / TinyVue from harness chrome where possible. */
+  display: block;
+  width: 100%;
   isolation: isolate;
   border-radius: 8px;
   overflow: auto;

@@ -5,7 +5,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { genPrompt } from '@opentiny/genui-sdk-core'
-import { materialsMeta } from '@opentiny/genui-sdk-materials-react-antd/meta'
+import { materialsMeta } from '@opentiny/genui-sdk-materials-vue-opentiny-vue/meta'
 
 export const name = 'dsh-genui'
 export const inject = ['systemPrompt']
@@ -29,7 +29,7 @@ export const Config: z<Config> = z.object({
  * @param config - validated plugin config.
  */
 export function apply(ctx: Context, config: Config): void {
-  const text = genPrompt('React', materialsMeta, {
+  const text = genPrompt('Vue', materialsMeta, {
     customActions: [
       {
         name: 'continueChat',
