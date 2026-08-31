@@ -20,6 +20,12 @@ export interface TurnTailOwner {
   readonly openFile: (path: string) => void
 }
 
+/** Session-kit input face (setDraft + submit) from conversation session provide. */
+export interface GenuiInputActions {
+  readonly setDraft: (text: string) => void
+  readonly submit: () => void
+}
+
 /** Props passed by conversation.chat.node for key assistant-step. */
 export interface GenuiAssistantNodeViewProps {
   readonly node: {
@@ -40,4 +46,6 @@ export interface GenuiAssistantNodeViewProps {
     readonly closing?: { readonly finalNode: { readonly seq: number } }
   } | undefined
   readonly openFile: (path: string) => void
+  /** Present on session-scoped chat nodes via the standard session kit. */
+  readonly inputActions?: GenuiInputActions | undefined
 }

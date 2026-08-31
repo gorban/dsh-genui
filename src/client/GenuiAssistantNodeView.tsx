@@ -16,7 +16,7 @@ export const ASSISTANT_STEP_PRIORITY = -1
 
 /** Keyed Chat Node view that replaces the stock assistant bubble. */
 export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
-  node, loadImage, fileMentions, t, useTurnData, openFile,
+  node, loadImage, fileMentions, t, useTurnData, openFile, inputActions,
 }: GenuiAssistantNodeViewProps) {
   const data = node.data
   const streaming = data.status === 'running'
@@ -43,15 +43,24 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
     continueChat: {
       name: 'continueChat',
       description: 'Continue the chat with a follow-up user message.',
-      execute: (params) => {
+      // Match GenUI Chat: short button label + card state (formData, …) for the model.
+      execute: (params, context) => {
         const message = typeof params === 'object' && params !== null && 'message' in params
           ? String((params as { message: unknown }).message)
           : ''
-        if (message.trim().length === 0) return
-        console.info('[dsh-genui] continueChat', message)
+        if (message.trim().length === 0 || inputActions === undefined) return
+        let stateJson = '{}'
+        try {
+          stateJson = JSON.stringify(context?.state ?? {})
+        } catch {
+          stateJson = '{}'
+        }
+        const draft = `${message},相关参数为：${stateJson}`
+        inputActions.setDraft(draft)
+        inputActions.submit()
       },
     },
-  }), [])
+  }), [inputActions])
 
   const blocks = data.blocks
   const hasVisible = streaming

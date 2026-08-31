@@ -65,7 +65,6 @@ Vue is **inlined** in the client bundle (not a harness platform module). Custom-
 
 ## Known limitations
 
-- `continueChat` only logs to the browser console; wire to the composer later.
 - Shadows the **entire** assistant row; track upstream `AssistantNodeView` changes.
 - Client bundle is large (~11MB uncompressed) because TinyVue + materials are inlined.
 - GenUI prompt is long — keep the bundle opt-in.

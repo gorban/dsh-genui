@@ -33,11 +33,15 @@ export function apply(ctx: Context, config: Config): void {
     customActions: [
       {
         name: 'continueChat',
-        description: 'Send a follow-up user message to continue the conversation.',
+        description:
+          'Continue the conversation (e.g. form submit). Pass a short message only; the host appends the card state (formData, etc.) automatically.',
         parameters: {
           type: 'object',
           properties: {
-            message: { type: 'string', description: 'User-facing follow-up text.' },
+            message: {
+              type: 'string',
+              description: 'Short follow-up text (button label or summary). Do not put form fields here.',
+            },
           },
           required: ['message'],
         },
