@@ -1,8 +1,2 @@
 packages:
   - '.'
-  - '../../opentiny/genui-sdk/packages/core'
-  - '../../opentiny/genui-sdk/packages/frameworks/vue'
-  - '../../opentiny/genui-sdk/packages/materials/vue-opentiny-vue'
-  - '../../opentiny/genui-sdk/projects/tiny-schema-renderer'
-allowBuilds:
-  esbuild: set this to true or false
