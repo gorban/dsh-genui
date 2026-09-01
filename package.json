@@ -12,6 +12,7 @@
     "url": "https://github.com/lhuans/dsh-genui/issues"
   },
   "keywords": [
+    "dsh-plugin",
     "dsh",
     "deepseek-harness",
     "deepseek",
@@ -42,7 +43,9 @@
     "lib/client.js.map",
     "cordis.patch.yml",
     "README.md",
-    "README.zh-CN.md"
+    "README.zh-CN.md",
+    "LICENSE",
+    "screenshots.json"
   ],
   "engines": {
     "node": ">=20"
@@ -68,9 +71,9 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-client-ui-primitives": "*",
-    "@deepseek-ai/dsh-client-ui-slots": "*",
-    "@deepseek-ai/dsh-system-prompt": "*",
+    "@deepseek-ai/dsh-client-ui-primitives": ">=0.0.1-rc.1 <0.1.0 || >=0.1.0-rc.1 <0.2.0-0",
+    "@deepseek-ai/dsh-client-ui-slots": ">=0.0.1-rc.1 <0.1.0 || >=0.1.0-rc.1 <0.2.0-0",
+    "@deepseek-ai/dsh-system-prompt": ">=0.0.1-rc.1 <0.1.0 || >=0.1.0-rc.1 <0.2.0-0",
     "@deepseek-ai/schemastery": "^3.18.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
