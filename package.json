@@ -1,14 +1,56 @@
 {
   "name": "dsh-genui",
-  "description": "Installable DeepSeek Harness bundle: GenUI system prompt + Vue card rendering (Web Component) for assistant ```schemaJson blocks",
   "version": "0.1.0",
-  "private": true,
+  "description": "GenUI for DeepSeek Harness: interactive charts, forms, calculators, dashboards, and mini apps rendered inline in assistant replies, with actions that flow back to the model.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lhuans/dsh-genui.git"
+  },
+  "homepage": "https://github.com/lhuans/dsh-genui#readme",
+  "bugs": {
+    "url": "https://github.com/lhuans/dsh-genui/issues"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "deepseek",
+    "harness",
+    "genui",
+    "generative-ui",
+    "chat",
+    "assistant",
+    "vue",
+    "opentiny",
+    "forms",
+    "charts",
+    "dashboard",
+    "schemajson",
+    "plugin"
+  ],
   "type": "module",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.js.map",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build && pnpm test"
   },
   "dsh": {
     "bundle": {
@@ -24,12 +66,6 @@
       "platform": "web"
     }
   },
-  "scripts": {
-    "build": "tsdown",
-    "test": "vitest run"
-  },
-  "license": "MIT",
-  "dependencies": {},
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-client-ui-primitives": "*",
@@ -57,12 +93,5 @@
     "tsdown": "0.22.14",
     "typescript": "^5.9.3",
     "vitest": "4.1.10"
-  },
-  "files": [
-    "lib/index.js",
-    "lib/client.js",
-    "lib/client.js.map",
-    "cordis.patch.yml",
-    "README.md"
-  ]
+  }
 }

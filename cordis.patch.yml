@@ -1,5 +1,5 @@
 # GenUI prompt + card rendering for DeepSeek Harness Web.
-# Install: dsh plugin --profile web add /path/to/dsh-genui
+# Install: dsh plugin --profile web add dsh-genui
 - insert:
     - id: genui
       name: dsh-genui
