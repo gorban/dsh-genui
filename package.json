@@ -1,6 +1,6 @@
 {
   "name": "dsh-genui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "GenUI for DeepSeek Harness: interactive charts, forms, calculators, dashboards, and mini apps rendered inline in assistant replies, with actions that flow back to the model.",
   "license": "MIT",
   "repository": {
@@ -38,9 +38,8 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "lib/index.js",
-    "lib/client.js",
-    "lib/client.js.map",
+    "public",
+    "lib",
     "cordis.patch.yml",
     "README.md",
     "README.zh-CN.md",
