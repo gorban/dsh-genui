@@ -115,9 +115,9 @@ function Examples() {
         <div className="examples-grid">
           {items.map((item) => (
             <article key={item.title} className="example-card">
-              <img src={item.img} alt={item.title} loading="lazy" width={800} height={450} />
               <h3>{item.title}</h3>
               <p>{item.desc}</p>
+              <img src={item.img} alt={item.title} loading="lazy" />
             </article>
           ))}
         </div>

@@ -248,15 +248,23 @@ code {
 /* Examples */
 .examples-grid {
   display: grid;
-  gap: 40px;
+  gap: 48px;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .example-card {
   display: grid;
   gap: 16px;
+  justify-items: center;
+  text-align: center;
 }
 
 .example-card img {
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  margin: 8px auto 0;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
@@ -270,6 +278,7 @@ code {
 .example-card p {
   color: var(--text-secondary);
   font-size: 0.95rem;
+  max-width: 560px;
 }
 
 /* Compare table */
