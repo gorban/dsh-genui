@@ -7,7 +7,7 @@
     "type": "git",
     "url": "git+https://github.com/lhuans/dsh-genui.git"
   },
-  "homepage": "https://github.com/lhuans/dsh-genui#readme",
+  "homepage": "https://lhuans.github.io/dsh-genui/",
   "bugs": {
     "url": "https://github.com/lhuans/dsh-genui/issues"
   },
@@ -51,7 +51,10 @@
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
-    "prepublishOnly": "pnpm build && pnpm test"
+    "prepublishOnly": "pnpm build && pnpm test",
+    "website:dev": "pnpm --filter dsh-genui-website dev",
+    "website:build": "pnpm sync:website-assets && pnpm --filter dsh-genui-website build",
+    "sync:website-assets": "mkdir -p website/public && cp public/*.png website/public/"
   },
   "dsh": {
     "bundle": {
