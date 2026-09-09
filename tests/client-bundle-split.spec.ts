@@ -33,4 +33,16 @@ describe('client bundle split', () => {
       expect(src.match(new RegExp(`(?<![.\\w'"])${flag}(?![\\w'"])`)), flag).toBeNull()
     }
   })
+
+  it('ships dark-mode theme sync in the built runtime', () => {
+    const bundle = resolve('lib/genui-runtime.js')
+    if (!existsSync(bundle)) return // dev checkout without a build
+    const src = readFileSync(bundle, 'utf8')
+    // The card observes DSH's body[data-ds-dark-theme] marker and feeds the
+    // resolved mode to GenuiConfigProvider. Chart schemas receive one of the
+    // cloud themes because canvas output does not inherit CSS variables.
+    expect(src).toContain('data-ds-dark-theme')
+    expect(src).toContain('cloud-dark')
+    expect(src).toContain('cloud-light')
+  })
 })
