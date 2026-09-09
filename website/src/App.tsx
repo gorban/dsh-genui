@@ -103,9 +103,10 @@ function Tags() {
 function Examples() {
   const { t } = useI18n()
   const items = [
-    { ...t.examples.calculator, img: 'computer.png' },
-    { ...t.examples.form, img: 'form.png' },
-    { ...t.examples.chart, img: 'chat.png' },
+    { ...t.examples.calculator, img: 'computer.webp' },
+    { ...t.examples.form, img: 'form.webp' },
+    { ...t.examples.chart, img: 'chat.webp' },
+    { ...t.examples.dashboard, img: 'dark-theme.webp' },
   ]
 
   return (
@@ -201,6 +202,14 @@ function Install() {
               <li key={step}>{step}</li>
             ))}
           </ol>
+          <p>{t.install.enable}</p>
+          <figure className="install-figure">
+            <img
+              src="prompt-toggle.webp"
+              alt={t.install.toggleImageAlt}
+              loading="lazy"
+            />
+          </figure>
           <p>{t.install.verify}</p>
           <p>{t.install.remove}</p>
         </div>

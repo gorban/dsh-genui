@@ -21,6 +21,7 @@ export interface Messages {
     calculator: { title: string; desc: string }
     form: { title: string; desc: string }
     chart: { title: string; desc: string }
+    dashboard: { title: string; desc: string }
   }
   compare: {
     title: string
@@ -38,6 +39,8 @@ export interface Messages {
   install: {
     title: string
     steps: string[]
+    enable: string
+    toggleImageAlt: string
     verify: string
     remove: string
   }
@@ -64,7 +67,7 @@ export const en: Messages = {
     subtitle:
       'Turn AI replies from a wall of text into interfaces you can click — charts, forms, calculators, and mini apps rendered inline, with actions flowing back to the conversation.',
     installHint:
-      'Then restart `dsh web`, refresh the browser, and start a new session. Say "generate a calculator" to see it live.',
+      'Then restart `dsh web`, refresh the browser, and enable GenUI from the composer toggle. Say "generate a calculator" to see it live.',
     copy: 'Copy',
     copied: 'Copied!',
   },
@@ -79,7 +82,7 @@ export const en: Messages = {
     'DSH Plugin',
   ],
   examples: {
-    title: 'Three real examples',
+    title: 'Real examples',
     calculator: {
       title: '"Generate a calculator"',
       desc: 'Every key works — digits, operators, parentheses, backspace, clear. The result was typed on the keypad, not written by the model.',
@@ -91,6 +94,10 @@ export const en: Messages = {
     chart: {
       title: '"Show traffic as a line chart"',
       desc: 'Two series, legend, axes, gridlines — a rendered chart inside the reply, not ASCII art.',
+    },
+    dashboard: {
+      title: '"Mock a dashboard"',
+      desc: 'A generated dashboard follows the dark DSH surface, so charts, labels, and legends stay readable.',
     },
   },
   compare: {
@@ -136,7 +143,7 @@ export const en: Messages = {
   },
   howItWorks: {
     title: 'How it works',
-    body: 'The plugin adds a system prompt that teaches the model to output structured JSON in `schemaJson` code blocks when a UI helps. DSH renders that JSON into real components via OpenTiny GenUI SDK — streaming as the model writes. Components are whitelisted; no arbitrary HTML or scripts.',
+    body: 'When the composer toggle is enabled, the plugin adds a prompt that teaches the model to output structured JSON in `schemaJson` code blocks when a UI helps. DSH renders that JSON into real components via OpenTiny GenUI SDK — streaming as the model writes, and keeping already rendered cards visible if generation is paused. Components are whitelisted; no arbitrary HTML or scripts.',
   },
   install: {
     title: 'Install',
@@ -146,7 +153,9 @@ export const en: Messages = {
       'Run the install command above in a new terminal',
       'Stop DSH (Ctrl+C), restart with `dsh web`, refresh browser, open a new session',
     ],
-    verify: 'In a new session, say "generate a calculator". If keys appear and work, you\'re set.',
+    enable: 'Click the sparkle button in the composer tool row to enable GenUI authoring. It starts off after DSH restarts or the plugin reloads; card rendering stays installed.',
+    toggleImageAlt: 'DSH composer showing the sparkle toggle with the tooltip "GenUI prompt off".',
+    verify: 'With the sparkle toggle enabled, say "generate a calculator". If keys appear and work, you\'re set.',
     remove: 'Remove: `dsh plugin --profile web remove dsh-genui` (restart required).',
   },
   faq: {
@@ -154,7 +163,7 @@ export const en: Messages = {
     items: [
       {
         q: 'Still seeing code blocks?',
-        a: 'Almost always a missed restart or an old session. Stop DSH, restart, refresh, and open a new conversation.',
+        a: 'Check the sparkle toggle first, then the restart. Stop DSH, restart, refresh, open a new session, and enable the toggle.',
       },
       {
         q: 'pnpm not found?',
@@ -162,11 +171,19 @@ export const en: Messages = {
       },
       {
         q: 'AI not using UI by default?',
-        a: 'Normal — ask explicitly: "answer with a chart/form/interface".',
+        a: 'The authoring prompt is off by default. Enable the sparkle toggle, then ask: "answer with a chart/form/interface".',
       },
       {
         q: 'Breaks plain text replies?',
         a: 'No. Text-only answers work exactly as before.',
+      },
+      {
+        q: 'What happens if I pause a reply?',
+        a: 'Cards that have already rendered stay on screen. They do not turn back into incomplete JSON.',
+      },
+      {
+        q: 'Does it match the DSH theme?',
+        a: 'Yes. Both light and dark themes are supported.',
       },
     ],
   },
@@ -189,7 +206,7 @@ export const zh: Messages = {
     subtitle:
       '让 AI 的回答从「一段文字」变成「能点的界面」—— 图表、表单、计算器、小应用直接在对话里渲染，你的操作自动回到下一轮对话。',
     installHint:
-      '然后重启 `dsh web`，刷新浏览器，开一个新会话。说一句「生成一个计算器」即可看到效果。',
+      '然后重启 `dsh web`，刷新浏览器，打开输入框里的 GenUI 开关。说一句「生成一个计算器」即可看到效果。',
     copy: '复制',
     copied: '已复制！',
   },
@@ -204,7 +221,7 @@ export const zh: Messages = {
     'DSH 插件',
   ],
   examples: {
-    title: '三个真实例子',
+    title: '真实例子',
     calculator: {
       title: '说「生成一个计算器」',
       desc: '数字键、四则运算、括号、退格、清空都能按。算出来的结果是真按出来的，不是 AI 写在文字里的。',
@@ -216,6 +233,10 @@ export const zh: Messages = {
     chart: {
       title: '说「用折线图展示访问量」',
       desc: '双折线、图例、坐标轴、网格线 —— 渲染出来的图，不是字符画。',
+    },
+    dashboard: {
+      title: '说「mock 一个大屏看板」',
+      desc: '生成的看板会跟随 DSH 暗色界面，图表、文字和图例保持清晰可读。',
     },
   },
   compare: {
@@ -261,7 +282,7 @@ export const zh: Messages = {
   },
   howItWorks: {
     title: '它是怎么做到的',
-    body: '插件给模型加了提示词，教它在需要时输出结构化 JSON（写在 `schemaJson` 代码块里）；DSH 网页端拿到 JSON 后，通过 OpenTiny GenUI SDK 渲染成真实组件，流式输出，写到哪渲染到哪。组件来自白名单，塞不进 HTML 或脚本。',
+    body: '打开输入框里的开关后，插件给模型加一段提示词，教它在需要时输出结构化 JSON（写在 `schemaJson` 代码块里）；DSH 网页端拿到 JSON 后，通过 OpenTiny GenUI SDK 渲染成真实组件，流式输出，写到哪渲染到哪。如果中途暂停，已经渲染出的卡片会保留在界面上。组件来自白名单，塞不进 HTML 或脚本。',
   },
   install: {
     title: '怎么装',
@@ -271,7 +292,9 @@ export const zh: Messages = {
       '在新终端执行上面的安装命令',
       '回到 DSH 终端 Ctrl+C 停掉，重新 `dsh web`，刷新浏览器，开新会话',
     ],
-    verify: '在新会话里说「生成一个计算器」。如果出现能按的计算器，就成了。',
+    enable: '点击输入框工具行里的星形按钮，开启 GenUI 提示词。DSH 重启或插件重新加载后默认关闭；卡片渲染能力始终保留。',
+    toggleImageAlt: 'DSH 输入框截图：星形按钮 hover 时显示「GenUI prompt off」提示。',
+    verify: '打开星形开关后，说「生成一个计算器」。如果出现能按的计算器，就成了。',
     remove: '卸载：`dsh plugin --profile web remove dsh-genui`（同样需要重启）。',
   },
   faq: {
@@ -279,7 +302,7 @@ export const zh: Messages = {
     items: [
       {
         q: '装完还是显示成代码块？',
-        a: '九成是没重启或还在用旧会话。停服务 → 重启 → 刷新 → 开新会话。',
+        a: '先检查星形开关，再检查重启。停服务 → 重启 → 刷新 → 开新会话 → 打开开关。',
       },
       {
         q: '提示 pnpm not found？',
@@ -287,11 +310,19 @@ export const zh: Messages = {
       },
       {
         q: 'AI 不主动用界面？',
-        a: '正常，明确说「用界面/表单/图表的方式给我」即可。',
+        a: 'GenUI 提示词默认关闭。先打开星形开关，再说「用界面/表单/图表的方式给我」。',
       },
       {
         q: '会不会影响原来的用法？',
         a: '不会，不需要界面的问题照常用文字回答。',
+      },
+      {
+        q: '中途暂停回复会怎样？',
+        a: '已经渲染出来的卡片会保留在界面上，不会退回成不完整的 JSON。',
+      },
+      {
+        q: '会跟随 DSH 主题吗？',
+        a: '会，亮色和暗色主题都已适配。',
       },
     ],
   },

@@ -204,6 +204,17 @@ code {
   line-height: 1.5;
 }
 
+.install-figure {
+  max-width: 720px;
+  margin: 20px auto 16px;
+}
+
+.install-figure img {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
 /* Tags */
 .tags {
   display: flex;

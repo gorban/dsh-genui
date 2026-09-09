@@ -20,13 +20,13 @@ All three screenshots are from a live DSH session — not mockups.
 
 ### "Generate a calculator"
 
-![A calculator rendered inside a DSH conversation](./public/computer.png)
+![A calculator rendered inside a DSH conversation](./public/computer.webp)
 
 Digits, operators, parentheses, backspace, clear — every key works. That 666 was typed on the keypad, not written into the text by the model.
 
 ### "Generate a form"
 
-![A project proposal form rendered inside a DSH conversation](./public/form.png)
+![A project proposal form rendered inside a DSH conversation](./public/form.webp)
 
 One sentence produces a full project proposal form: required-field validation, radio group, dropdown, headcount stepper, date picker, toggle, checkboxes, long text.
 
@@ -34,7 +34,7 @@ Hit **Submit** and your answers go back into the conversation, so the AI can ran
 
 ### "Show the last 7 days of traffic as a line chart"
 
-![A traffic line chart rendered inside a DSH conversation](./public/chat.png)
+![A traffic line chart rendered inside a DSH conversation](./public/chat.webp)
 
 Two series, legend, axes, gridlines — a rendered chart, not ASCII art.
 

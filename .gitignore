@@ -3,4 +3,4 @@ lib/*.map
 *.log
 .DS_Store
 website/dist/
-website/public/*.png
+website/public/*.webp
