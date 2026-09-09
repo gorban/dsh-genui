@@ -5,6 +5,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { ASSISTANT_STEP_PRIORITY, GenuiAssistantNodeView } from './GenuiAssistantNodeView.tsx'
 import { prefetchGenuiRuntime } from './load-genui-runtime.ts'
+import { PromptToggleButton } from './prompt-toggle-button.tsx'
 
 export const inject = ['slots']
 
@@ -14,6 +15,11 @@ export const inject = ['slots']
  */
 export function apply(ctx: Context): void {
   prefetchGenuiRuntime()
+  ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
+    name: 'conversation.input.left',
+    id: 'genui-prompt-toggle',
+    order: 0,
+  }, PromptToggleButton))
   // ui-chat owns assistant-step renderers and uses the `chat` locale namespace.
   // Omitting `locale` leaves `t` undefined and the view crashes; the slot then
   // abdicates to the built-in assistant-step (schemaJson shows as a Markdown

@@ -153,7 +153,11 @@ DSH 在启动时就锁定了当前的插件集合，所以**装完插件不重�
 1. 回到跑着 DSH 的那个终端，按 `Ctrl+C` 停掉
 2. 重新启动：`dsh web`
 3. 浏览器刷新一下页面
-4. **开一个新会话**（插件的提示词是在会话开始时注入的，旧会话不生效）
+4. **开一个新会话**
+
+### 打开 GenUI 提示词
+
+点击输入框工具行里的星形按钮，开启 GenUI 授权提示词。DSH 重启或插件重新加载后，开关默认关闭；它只控制发给模型的提示词，卡片渲染能力始终保留。
 
 ### 验证装好了没
 
@@ -193,7 +197,7 @@ DSH 管理插件依赖 pnpm。执行 `corepack enable`（或 `npm i -g pnpm`）�
 
 **AI 不主动用界面回答？**
 
-正常现象，它会看情况判断。想要的时候明确说一句「用界面/表单/图表的方式给我」就行。
+如果星形开关是关闭的，模型不会收到 GenUI 提示词。先打开开关，再说一句「用界面/表单/图表的方式给我」就行。
 
 **会不会影响原来的用法？**
 
@@ -209,7 +213,7 @@ DSH 管理插件依赖 pnpm。执行 `corepack enable`（或 `npm i -g pnpm`）�
 
 一句话：AI 不再只写文字，它还会写一段「界面描述」，浏览器把这段描述渲染成真正的组件。
 
-具体一点：插件给模型加了一段提示词，教它在需要的时候输出一段结构化的 JSON（写在 `schemaJson` 代码块里）；DSH 网页端拿到这段 JSON 后，交给渲染器变成实际组件。整个过程是流式的，AI 写到哪、界面就渲染到哪，不用等它把话说完。
+具体一点：输入框开关打开时，插件给模型加一段提示词，教它在需要的时候输出一段结构化的 JSON（写在 `schemaJson` 代码块里）；DSH 网页端拿到这段 JSON 后，交给渲染器变成实际组件。整个过程是流式的，AI 写到哪、界面就渲染到哪，不用等它把话说完。
 
 组件本身来自 [OpenTiny GenUI SDK](https://opentiny.design/genui-sdk) 和 OpenTiny Vue 组件库——这是 OpenTiny 团队做的生成式 UI 方案，一整套「让大模型输出界面」的规范和渲染引擎。dsh-genui 做的事情，是把它接到了 DSH 的对话流里。
 
@@ -219,6 +223,7 @@ DSH 管理插件依赖 pnpm。执行 `corepack enable`（或 `npm i -g pnpm`）�
 
 ## 相关链接
 
+- 更新记录：<https://github.com/lhuans/dsh-genui/releases>
 - npm 包：<https://www.npmjs.com/package/dsh-genui>
 - OpenTiny GenUI SDK：<https://github.com/opentiny/genui-sdk>
 - DeepSeek Harness：<https://github.com/deepseek-ai/deepseek-harness>

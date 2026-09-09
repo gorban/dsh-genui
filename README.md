@@ -153,7 +153,11 @@ DSH locks in its plugin set at startup, so **nothing changes in the UI until you
 1. Go back to the terminal running DSH and press `Ctrl+C`
 2. Start it again: `dsh web`
 3. Refresh the browser
-4. **Start a new conversation** — the plugin's prompt is injected when a session begins, so older sessions won't pick it up
+4. **Start a new conversation**
+
+### Turn the authoring prompt on
+
+Click the sparkle button in the composer tool row to turn GenUI authoring on. The toggle starts off after DSH restarts or the plugin reloads, and it only controls the authoring guidance sent to the model. Card rendering stays installed either way.
 
 ### Check that it worked
 
@@ -193,7 +197,7 @@ DSH needs pnpm to manage plugins. Run `corepack enable` (or `npm i -g pnpm`), th
 
 **The AI doesn't use interfaces on its own?**
 
-That's expected; it decides case by case. When you want one, just say "give me a form / chart / interface."
+If the sparkle toggle is off, the model has no GenUI authoring guidance. Turn it on, then say something like "give me a form / chart / interface."
 
 **Does this change how DSH normally works?**
 
@@ -209,7 +213,7 @@ Yes. Run `dsh plugin remove`, restart, and DSH is back to its original state wit
 
 In short: the model no longer writes only text — it also writes a *description of an interface*, and the browser renders that description into real components.
 
-A bit more detail: the plugin adds a prompt section teaching the model to emit structured JSON (inside a `schemaJson` code block) when an interface would help. The DSH web client picks up that JSON and hands it to a renderer. It's streaming, so the interface appears as the model writes it — no waiting for the full reply.
+A bit more detail: when the composer toggle is enabled, the plugin adds a prompt section teaching the model to emit structured JSON (inside a `schemaJson` code block) when an interface would help. The DSH web client picks up that JSON and hands it to a renderer. It's streaming, so the interface appears as the model writes it — no waiting for the full reply.
 
 The components come from [OpenTiny GenUI SDK](https://opentiny.design/genui-sdk) and the OpenTiny Vue library — OpenTiny's generative-UI stack, a spec plus rendering engine for letting LLMs produce interfaces. dsh-genui wires that into the DSH conversation flow.
 
@@ -219,6 +223,7 @@ On safety: the model can only use whitelisted components. It cannot inject HTML 
 
 ## Links
 
+- Changelog: <https://github.com/lhuans/dsh-genui/releases>
 - npm package: <https://www.npmjs.com/package/dsh-genui>
 - OpenTiny GenUI SDK: <https://github.com/opentiny/genui-sdk>
 - DeepSeek Harness: <https://github.com/deepseek-ai/deepseek-harness>

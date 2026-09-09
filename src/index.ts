@@ -5,8 +5,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { genPrompt } from '@opentiny/genui-sdk-core'
 import { materialsMeta } from '@opentiny/genui-sdk-materials-vue-opentiny-vue/meta'
+import { genPrompt } from '@opentiny/genui-sdk-core'
+import { createGenuiPromptControl, createGenuiPromptControlHandler } from './prompt-control.ts'
+import { GENUI_PROMPT_CONTROL_URL } from './prompt-control-url.ts'
 import {
   GENUI_RUNTIME_MAP_URL,
   GENUI_RUNTIME_URL,
@@ -39,12 +41,11 @@ export const Config: z<Config> = z.object({
 })
 
 /**
- * Register the GenUI authoring guidance on the host system-prompt registry.
- * @param ctx - Cordis context with `systemPrompt` injected.
- * @param config - validated plugin config.
+ * Create the GenUI authoring guidance for the host system-prompt registry.
+ * @returns The prompt text to register while the composer toggle is enabled.
  */
-export function apply(ctx: Context, config: Config): void {
-  const text = genPrompt('Vue', materialsMeta, {
+function genuiPromptText(): string {
+  return genPrompt('Vue', materialsMeta, {
     customActions: [
       {
         name: 'continueChat',
@@ -63,18 +64,37 @@ export function apply(ctx: Context, config: Config): void {
       },
     ],
   })
+}
+
+/**
+ * Register the GenUI runtime and the on-demand authoring prompt toggle.
+ * @param ctx - Cordis context with `systemPrompt` injected.
+ * @param config - validated plugin config.
+ */
+export function apply(ctx: Context, config: Config): void {
   // systemPrompt is provided by the web/base profile; typed loosely for out-of-tree builds.
   const systemPrompt = (ctx as Context & {
     systemPrompt: { section: (section: { name: string; order: number; text: string }) => () => void }
   }).systemPrompt
-  systemPrompt.section({
+  const promptControl = createGenuiPromptControl({
     name: config.sectionName,
     order: config.sectionOrder,
-    text,
-  })
+    text: genuiPromptText(),
+  }, systemPrompt)
+
+  // A disabled prompt must not survive plugin unload and re-enable.
+  ctx.effect(() => () => promptControl.set(false), 'dsh-genui: prompt toggle state')
 
   const artifacts = genuiRuntimeArtifactPaths()
   const webServer = (ctx as Context & { webServer: WebServer }).webServer
+  ctx.effect(
+    () => webServer.register({
+      kind: 'exact',
+      path: GENUI_PROMPT_CONTROL_URL,
+      handler: createGenuiPromptControlHandler(promptControl),
+    }),
+    'dsh-genui: prompt toggle state endpoint',
+  )
   ctx.effect(
     () => webServer.register({
       kind: 'exact',
