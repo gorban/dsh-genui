@@ -2,13 +2,28 @@
  * Host half: injects the GenUI card-authoring system-prompt section so the
  * model emits ```schemaJson fences alongside normal markdown.
  */
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { genPrompt } from '@opentiny/genui-sdk-core'
 import { materialsMeta } from '@opentiny/genui-sdk-materials-vue-opentiny-vue/meta'
+import {
+  GENUI_RUNTIME_MAP_URL,
+  GENUI_RUNTIME_URL,
+  genuiRuntimeArtifactPaths,
+  serveStaticFile,
+} from './serve-genui-runtime.ts'
 
 export const name = 'dsh-genui'
-export const inject = ['systemPrompt']
+export const inject = ['systemPrompt', 'webServer']
+
+interface WebServer {
+  register(route: {
+    kind: 'exact' | 'prefix'
+    path: string
+    handler: (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
+  }): () => void
+}
 
 /** Tunables for the GenUI prompt section. */
 export interface Config {
@@ -57,4 +72,23 @@ export function apply(ctx: Context, config: Config): void {
     order: config.sectionOrder,
     text,
   })
+
+  const artifacts = genuiRuntimeArtifactPaths()
+  const webServer = (ctx as Context & { webServer: WebServer }).webServer
+  ctx.effect(
+    () => webServer.register({
+      kind: 'exact',
+      path: GENUI_RUNTIME_URL,
+      handler: serveStaticFile(artifacts.js, 'text/javascript; charset=utf-8'),
+    }),
+    'dsh-genui: runtime.js',
+  )
+  ctx.effect(
+    () => webServer.register({
+      kind: 'exact',
+      path: GENUI_RUNTIME_MAP_URL,
+      handler: serveStaticFile(artifacts.map, 'application/json; charset=utf-8'),
+    }),
+    'dsh-genui: runtime.js.map',
+  )
 }

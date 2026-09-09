@@ -175,6 +175,50 @@ export function mobileBundle(id: string, entry: string): UserConfig {
   }
 }
 
+/**
+ * Vue / OpenTiny GenUI custom-element bundle. DSH only serves
+ * `/plugins/<id>/client.js`, so this file is a self-contained ESM (no module
+ * loader wrapper) that the plugin's Node half exposes at `/dsh-genui/runtime.js`
+ * and the thin client loads on demand.
+ * @param id - plugin id (package name), stamped onto injected style tags.
+ * @param entry - runtime entry (e.g. `src/client/genui-runtime.ts`).
+ * @param portableCssModuleIds - repository-relative CSS virtual ids for
+ *   reproducible artifacts.
+ * @returns a fully self-contained browser bundle config.
+ */
+export function runtimeBundle(id: string, entry: string, portableCssModuleIds = false): UserConfig {
+  return {
+    name: `${id}/runtime`,
+    entry: { 'genui-runtime': entry },
+    outDir: 'lib',
+    format: 'esm',
+    platform: 'browser',
+    target: 'es2022',
+    dts: false,
+    sourcemap: true,
+    minify: true,
+    clean: false,
+    external: [],
+    noExternal: [/.*/],
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
+      'import.meta.env.MODE': JSON.stringify(process.env.NODE_ENV ?? 'production'),
+      'import.meta.env': JSON.stringify({ MODE: process.env.NODE_ENV ?? 'production' }),
+      // Vue's esm-bundler build leaves bare __VUE_*__ compile switches for the
+      // bundler to replace (Vite normally does). An ESM bundle must define them
+      // or Vue throws `__VUE_PROD_DEVTOOLS__ is not defined` at mount; the old
+      // CJS client.js resolved vue.cjs.prod.js, which inlines them already.
+      ...vueFeatureFlags(),
+    },
+    plugins: browserInlinePlugins(id, portableCssModuleIds),
+    outputOptions: {
+      entryFileNames: 'genui-runtime.js',
+      // One file: extra rolldown chunks would 404 (DSH has no asset route).
+      codeSplitting: false,
+    },
+  }
+}
+
 interface ClientBundleOptions {
   /** Emit the Node-side artifacts during the Host pass instead of the Client pass. */
   readonly hostPhase?: boolean
@@ -186,6 +230,20 @@ interface ClientBundleOptions {
   readonly libExternal?: readonly (string | RegExp)[]
   /** Use repository-relative CSS virtual ids and hashes for cross-platform reproducible artifacts. */
   readonly portableCssModuleIds?: boolean
+}
+
+/**
+ * Vue esm-bundler compile-time feature switches (the set Vite defines by
+ * default for production apps). A self-contained browser bundle must replace
+ * them or the bare references throw at runtime.
+ */
+function vueFeatureFlags(): Record<string, string> {
+  const dev = process.env.NODE_ENV === 'development'
+  return {
+    __VUE_OPTIONS_API__: 'true',
+    __VUE_PROD_DEVTOOLS__: String(dev),
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: String(dev),
+  }
 }
 
 type BuildFace = 'host' | 'client' | undefined
@@ -223,7 +281,6 @@ function clientLibraryConfig(
 }
 
 function clientConfig(id: string, entry: string, portableCssModuleIds: boolean): UserConfig {
-  const cssFiles = new Map<string, string>()
   return {
     name: `${id}/client`,
     entry: { client: entry },
@@ -261,95 +318,27 @@ function clientConfig(id: string, entry: string, portableCssModuleIds: boolean):
     // guaranteed runtime throw, so the rule is the table list itself: no
     // opinion for table entries (external above wins), bundle everything else.
     noExternal: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
-    plugins: [{
-      // Bundle purity gate (build-time mirror of the module-edge rules):
-      // platform seed entries stay external, inline-safe wire layers inline,
-      // and every other @deepseek-ai value import is a build error — a
-      // cross-plugin value import either inlines a duplicate runtime instance
-      // or requires a specifier the frozen module table cannot answer.
-      // Cross-plugin collaboration goes through cordis services instead.
-      name: 'dsh-client-bundle-purity',
-      resolveId(source: string) {
-        if (!source.startsWith('@deepseek-ai/')) return null
-        if (CLIENT_EXTERNALS.includes(source)) return null // platform module: external wins
-        if (INLINE_SAFE.test(source) || GENERATED_REMOTE.test(source)) return null // wire contribution: inline is the point
-        throw new Error(
-          `client bundle purity: "${source}" is not a platform module (CLIENT_EXTERNALS), an inline-safe wire layer, or a generated /remote contribution — `
-          + 'cross-plugin value imports are forbidden; collaborate through cordis services (type-only imports are erased and never reach this gate)',
-        )
+    plugins: [
+      {
+        // Bundle purity gate (build-time mirror of the module-edge rules):
+        // platform seed entries stay external, inline-safe wire layers inline,
+        // and every other @deepseek-ai value import is a build error — a
+        // cross-plugin value import either inlines a duplicate runtime instance
+        // or requires a specifier the frozen module table cannot answer.
+        // Cross-plugin collaboration goes through cordis services instead.
+        name: 'dsh-client-bundle-purity',
+        resolveId(source: string) {
+          if (!source.startsWith('@deepseek-ai/')) return null
+          if (CLIENT_EXTERNALS.includes(source)) return null // platform module: external wins
+          if (INLINE_SAFE.test(source) || GENERATED_REMOTE.test(source)) return null // wire contribution: inline is the point
+          throw new Error(
+            `client bundle purity: "${source}" is not a platform module (CLIENT_EXTERNALS), an inline-safe wire layer, or a generated /remote contribution — `
+            + 'cross-plugin value imports are forbidden; collaborate through cordis services (type-only imports are erased and never reach this gate)',
+          )
+        },
       },
-    }, {
-      name: 'dsh-binary-assets-inline',
-      async load(id: string) {
-        const fileId = id.split('?')[0] ?? id
-        if (!BINARY_ASSET.test(fileId) || !existsSync(fileId)) return null
-        const data = await readFile(fileId)
-        return `export default ${JSON.stringify(`data:${mimeForAsset(fileId)};base64,${data.toString('base64')}`)};`
-      },
-    }, {
-      name: 'dsh-css-modules-inline',
-      resolveId(source: string, importer: string | undefined) {
-        const specifier = source.split('?')[0] ?? source
-        if (!specifier.endsWith('.css')) return null
-        const abs = resolveCssFile(specifier, importer)
-        if (abs === undefined) return null
-        const sourceId = portableCssModuleIds
-          ? relative(REPOSITORY_ROOT, abs).split(sep).join('/')
-          : abs
-        const kind = specifier.endsWith('.module.css') ? 'module' : 'global'
-        const virtualId = `${CSS_VIRTUAL_PREFIX}${kind}:${sourceId}${CSS_VIRTUAL_SUFFIX}`
-        cssFiles.set(virtualId, abs)
-        return virtualId
-      },
-      async load(virtualId: string) {
-        if (!virtualId.startsWith(CSS_VIRTUAL_PREFIX)) return null
-        const rest = virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length)
-        const isModule = rest.startsWith('module:')
-        const sourceId = rest.slice(isModule ? 'module:'.length : 'global:'.length)
-        const fileId = cssFiles.get(virtualId) ?? sourceId
-        // The virtual id otherwise hides the physical stylesheet from Rolldown's watch graph.
-        this.addWatchFile(fileId)
-        const source = await readFile(fileId)
-        let cssText: string
-        let classMap: Record<string, string> = {}
-        try {
-          const { code, exports: cssExports } = transform({
-            filename: portableCssModuleIds ? sourceId : fileId,
-            code: source,
-            cssModules: isModule ? { pattern: '[hash]_[local]' } : undefined,
-            minify: true,
-          })
-          cssText = code.toString()
-          // Sort deterministically: lightningcss's cssExports iteration order is
-          // process-dependent (hash-map seeds), which would otherwise churn the
-          // emitted lib/client.js on every rebuild.
-          if (isModule) {
-            for (const [local, exp] of Object.entries(cssExports ?? {}).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
-              classMap[local] = exp.name
-            }
-          }
-        } catch {
-          // TinyRobot (and similar) ship CSS that lightningcss cannot parse; inject raw.
-          if (isModule) {
-            throw new Error(`css modules transform failed for ${fileId}`)
-          }
-          cssText = source.toString('utf8')
-        }
-        // One <style data-plugin> per module file; idempotent under re-evaluation.
-        return [
-          `const css = ${JSON.stringify(cssText)};`,
-          `const tagId = ${JSON.stringify(`${id}/${sourceId.split(sep).join('/')}`)};`,
-          'if (typeof document !== \'undefined\' && document.querySelector(\'style[data-plugin-css=\' + JSON.stringify(tagId) + \']\') === null) {',
-          '  const tag = document.createElement(\'style\');',
-          `  tag.dataset.plugin = ${JSON.stringify(id)};`,
-          '  tag.dataset.pluginCss = tagId;',
-          '  tag.textContent = css;',
-          '  document.head.appendChild(tag);',
-          '}',
-          `export default ${JSON.stringify(classMap)};`,
-        ].join('\n')
-      },
-    }],
+      ...browserInlinePlugins(id, portableCssModuleIds),
+    ],
     outputOptions: {
       entryFileNames: 'client.js',
       // The map is served from /plugins/<scoped-package>/client.js.map. The
@@ -386,4 +375,81 @@ function resolveCssFile(specifier: string, importer: string | undefined): string
   } catch {
     return undefined
   }
+}
+
+/** Inline binary assets and CSS (modules + global) for a self-contained browser bundle. */
+function browserInlinePlugins(id: string, portableCssModuleIds: boolean) {
+  const cssFiles = new Map<string, string>()
+  return [{
+    name: 'dsh-binary-assets-inline',
+    async load(fileId: string) {
+      const path = fileId.split('?')[0] ?? fileId
+      if (!BINARY_ASSET.test(path) || !existsSync(path)) return null
+      const data = await readFile(path)
+      return `export default ${JSON.stringify(`data:${mimeForAsset(path)};base64,${data.toString('base64')}`)};`
+    },
+  }, {
+    name: 'dsh-css-modules-inline',
+    resolveId(source: string, importer: string | undefined) {
+      const specifier = source.split('?')[0] ?? source
+      if (!specifier.endsWith('.css')) return null
+      const abs = resolveCssFile(specifier, importer)
+      if (abs === undefined) return null
+      const sourceId = portableCssModuleIds
+        ? relative(REPOSITORY_ROOT, abs).split(sep).join('/')
+        : abs
+      const kind = specifier.endsWith('.module.css') ? 'module' : 'global'
+      const virtualId = `${CSS_VIRTUAL_PREFIX}${kind}:${sourceId}${CSS_VIRTUAL_SUFFIX}`
+      cssFiles.set(virtualId, abs)
+      return virtualId
+    },
+    async load(virtualId: string) {
+      if (!virtualId.startsWith(CSS_VIRTUAL_PREFIX)) return null
+      const rest = virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length)
+      const isModule = rest.startsWith('module:')
+      const sourceId = rest.slice(isModule ? 'module:'.length : 'global:'.length)
+      const fileId = cssFiles.get(virtualId) ?? sourceId
+      // The virtual id otherwise hides the physical stylesheet from Rolldown's watch graph.
+      this.addWatchFile(fileId)
+      const source = await readFile(fileId)
+      let cssText: string
+      let classMap: Record<string, string> = {}
+      try {
+        const { code, exports: cssExports } = transform({
+          filename: portableCssModuleIds ? sourceId : fileId,
+          code: source,
+          cssModules: isModule ? { pattern: '[hash]_[local]' } : undefined,
+          minify: true,
+        })
+        cssText = code.toString()
+        // Sort deterministically: lightningcss's cssExports iteration order is
+        // process-dependent (hash-map seeds), which would otherwise churn the
+        // emitted JS on every rebuild.
+        if (isModule) {
+          for (const [local, exp] of Object.entries(cssExports ?? {}).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
+            classMap[local] = exp.name
+          }
+        }
+      } catch {
+        // TinyRobot (and similar) ship CSS that lightningcss cannot parse; inject raw.
+        if (isModule) {
+          throw new Error(`css modules transform failed for ${fileId}`)
+        }
+        cssText = source.toString('utf8')
+      }
+      // One <style data-plugin> per module file; idempotent under re-evaluation.
+      return [
+        `const css = ${JSON.stringify(cssText)};`,
+        `const tagId = ${JSON.stringify(`${id}/${sourceId.split(sep).join('/')}`)};`,
+        'if (typeof document !== \'undefined\' && document.querySelector(\'style[data-plugin-css=\' + JSON.stringify(tagId) + \']\') === null) {',
+        '  const tag = document.createElement(\'style\');',
+        `  tag.dataset.plugin = ${JSON.stringify(id)};`,
+        '  tag.dataset.pluginCss = tagId;',
+        '  tag.textContent = css;',
+        '  document.head.appendChild(tag);',
+        '}',
+        `export default ${JSON.stringify(classMap)};`,
+      ].join('\n')
+    },
+  }]
 }

@@ -1,4 +1,4 @@
-import { clientBundle } from './build/tsdown.client.ts'
+import { clientBundle, runtimeBundle } from './build/tsdown.client.ts'
 
 export default clientBundle('dsh-genui', ['src/index.ts'], {
   portableCssModuleIds: true,
@@ -8,4 +8,5 @@ export default clientBundle('dsh-genui', ['src/index.ts'], {
     '@deepseek-ai/dsh-system-prompt',
     '@deepseek-ai/schemastery',
   ],
+  companions: [runtimeBundle('dsh-genui', 'src/client/genui-runtime.ts', true)],
 })

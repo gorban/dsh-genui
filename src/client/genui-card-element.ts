@@ -8,9 +8,10 @@ import { GenuiRenderer } from '@opentiny/genui-sdk-vue/renderer'
 import type { ICustomAction } from '@opentiny/genui-sdk-vue/renderer'
 import { materials } from '@opentiny/genui-sdk-materials-vue-opentiny-vue/materials'
 import '@opentiny/tiny-robot/dist/style.css'
+import { DSH_GENUI_CARD_TAG } from './genui-card-tag.ts'
 import './genui-card-host.css'
 
-export const DSH_GENUI_CARD_TAG = 'dsh-genui-card'
+export { DSH_GENUI_CARD_TAG }
 
 let cardSeq = 0
 

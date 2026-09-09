@@ -41,6 +41,7 @@
   "files": [
     "lib/index.js",
     "lib/client.js",
+    "lib/genui-runtime.js",
     "cordis.patch.yml",
     "README.md",
     "README.zh-CN.md",

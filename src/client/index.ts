@@ -4,6 +4,7 @@
  */
 import type { Context } from '@deepseek-ai/cordis'
 import { ASSISTANT_STEP_PRIORITY, GenuiAssistantNodeView } from './GenuiAssistantNodeView.tsx'
+import { prefetchGenuiRuntime } from './load-genui-runtime.ts'
 
 export const inject = ['slots']
 
@@ -12,6 +13,7 @@ export const inject = ['slots']
  * @param ctx - browser Cordis context with the slot service.
  */
 export function apply(ctx: Context): void {
+  prefetchGenuiRuntime()
   // ui-chat owns assistant-step renderers and uses the `chat` locale namespace.
   // Omitting `locale` leaves `t` undefined and the view crashes; the slot then
   // abdicates to the built-in assistant-step (schemaJson shows as a Markdown

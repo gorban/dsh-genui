@@ -22,6 +22,11 @@
   max-width: 100%;
 }
 
+.card[data-dsh-genui-card-pending],
+.card[data-dsh-genui-card-error] {
+  min-height: 4.5rem;
+}
+
 .think {
   opacity: 0.85;
   font-size: 0.9em;
