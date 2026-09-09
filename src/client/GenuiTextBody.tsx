@@ -14,6 +14,7 @@ import css from './genui-assistant.module.css'
 export interface GenuiTextBodyProps {
   text: string
   streaming: boolean
+  interrupted?: boolean | undefined
   labels: GenuiMarkdownLabels
   mentions?: MarkdownFileMentions | undefined
   customActions?: Record<string, ICustomAction> | undefined
@@ -21,9 +22,12 @@ export interface GenuiTextBodyProps {
 
 /** Render markdown segments and schemaJson fences as GenUI cards. */
 export const GenuiTextBody = memo(function GenuiTextBody({
-  text, streaming, labels, mentions, customActions,
+  text, streaming, interrupted, labels, mentions, customActions,
 }: GenuiTextBodyProps) {
-  const segments = useMemo(() => splitAssistantText(text, streaming), [text, streaming])
+  const segments = useMemo(
+    () => splitAssistantText(text, streaming, interrupted),
+    [text, streaming, interrupted],
+  )
   const nodes: ReactNode[] = []
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i]

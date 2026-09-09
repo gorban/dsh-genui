@@ -82,6 +82,7 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
             key={i}
             text={block.text}
             streaming={streaming}
+            interrupted={interrupted}
             labels={labels}
             mentions={mentions}
             customActions={customActions}

@@ -1,7 +1,8 @@
 /**
  * Split assistant markdown into prose vs ```schemaJson card payloads.
- * Complete fences become schema segments; while streaming, a trailing open
- * fence is treated as an incomplete schema segment for GenuiRenderer.
+ * Complete fences become schema segments; while streaming or interrupted, a
+ * trailing open fence is treated as an incomplete schema segment for
+ * GenuiRenderer.
  */
 
 /** One display segment after schemaJson extraction. */
@@ -16,9 +17,11 @@ const OPEN_FENCE = /```schemaJson\s*\r?\n?([\s\S]*)$/
  * Split assistant text into markdown and schema-card segments.
  * @param text - full assistant text block (streaming or final).
  * @param streaming - whether the turn is still generating.
+ * @param interrupted - whether generation was stopped after partial content.
  * @returns ordered segments for mixed markdown + GenUI rendering.
  */
-export function splitAssistantText(text: string, streaming: boolean): TextSegment[] {
+export function splitAssistantText(text: string, streaming: boolean, interrupted = false): TextSegment[] {
+  const live = streaming || interrupted
   const segments: TextSegment[] = []
   let last = 0
   COMPLETE_FENCE.lastIndex = 0
@@ -32,7 +35,7 @@ export function splitAssistantText(text: string, streaming: boolean): TextSegmen
   }
   const rest = text.slice(last)
   if (rest.length === 0) return segments
-  if (streaming) {
+  if (live) {
     const open = OPEN_FENCE.exec(rest)
     if (open !== null && open.index !== undefined) {
       const before = rest.slice(0, open.index)

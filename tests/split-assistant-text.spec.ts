@@ -58,6 +58,14 @@ describe('splitAssistantText', () => {
     ])
   })
 
+  it('treats a trailing open fence as incomplete after interruption', () => {
+    const text = 'intro\n```schemaJson\n{"componentName":"Page"'
+    expect(splitAssistantText(text, false, true)).toEqual([
+      { kind: 'markdown', text: 'intro\n' },
+      { kind: 'schema', text: '{"componentName":"Page"', complete: false },
+    ])
+  })
+
   it('accepts an empty but closed schemaJson fence', () => {
     const text = 'before\n```schemaJson\n```\nafter'
     expect(splitAssistantText(text, false)).toEqual([
