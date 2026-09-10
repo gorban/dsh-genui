@@ -13,6 +13,45 @@ export interface GenuiPromptControl {
   set(enabled: boolean): boolean
 }
 
+/** The persisted slice of prompt-toggle state in DSH settings. */
+export interface GenuiPromptSettings {
+  /** Whether the authoring prompt section is active. */
+  enabled: boolean
+}
+
+/** The owner-facing settings scope used by the toggle. */
+export interface GenuiPromptSettingsScope {
+  get(): GenuiPromptSettings
+  update(patch: GenuiPromptSettings): Promise<void>
+}
+
+/**
+ * Mirror prompt-toggle changes into DSH settings without delaying the UI.
+ * @param control - the in-memory prompt section control.
+ * @param settings - the registered settings scope.
+ * @param initialEnabled - fallback when settings contains no stored value.
+ * @param onError - called when persisting a user choice fails.
+ */
+export function createPersistedPromptControl(
+  control: GenuiPromptControl,
+  settings: GenuiPromptSettingsScope,
+  initialEnabled: boolean,
+  onError?: (error: unknown) => void,
+  onPersist?: (enabled: boolean) => void,
+): GenuiPromptControl {
+  const stored = settings.get().enabled
+  control.set(typeof stored === 'boolean' ? stored : initialEnabled)
+  return {
+    isEnabled: control.isEnabled,
+    set(enabled) {
+      const next = control.set(enabled)
+      onPersist?.(next)
+      void settings.update({ enabled: next }).catch(error => onError?.(error))
+      return next
+    },
+  }
+}
+
 /**
  * Create the host-side on/off state for the GenUI authoring section.
  * @param section - stable prompt section values.
@@ -44,11 +83,14 @@ export function createGenuiPromptControl(
  * @param control - host prompt toggle.
  */
 export function createGenuiPromptControlHandler(
-  control: Pick<GenuiPromptControl, 'isEnabled' | 'set'>,
+  control: Pick<GenuiPromptControl, 'isEnabled' | 'set'> & { persisted?: () => boolean },
 ): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   return async (req, res) => {
     if (req.method === 'GET') {
-      respond(res, 200, { enabled: control.isEnabled() })
+      respond(res, 200, {
+        enabled: control.isEnabled(),
+        ...(control.persisted === undefined ? {} : { persisted: control.persisted() }),
+      })
       return
     }
     if (req.method !== 'POST') {

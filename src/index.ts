@@ -7,7 +7,14 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { materialsMeta } from '@opentiny/genui-sdk-materials-vue-opentiny-vue/meta'
 import { genPrompt } from '@opentiny/genui-sdk-core'
-import { createGenuiPromptControl, createGenuiPromptControlHandler } from './prompt-control.ts'
+import {
+  createGenuiPromptControl,
+  createGenuiPromptControlHandler,
+  createPersistedPromptControl,
+  type GenuiPromptControl,
+  type GenuiPromptSettings,
+  type GenuiPromptSettingsScope,
+} from './prompt-control.ts'
 import { GENUI_PROMPT_CONTROL_URL } from './prompt-control-url.ts'
 import {
   GENUI_RUNTIME_MAP_URL,
@@ -40,6 +47,18 @@ export const Config: z<Config> = z.object({
   sectionName: z.string().default('genui:cards'),
 })
 
+/** Settings schema for the user's last prompt-toggle choice. */
+export const PromptSettings: z<GenuiPromptSettings> = z.object({
+  enabled: z.boolean().default(true),
+})
+
+/** The optional host settings seam used to persist the toggle. */
+interface SettingsHost {
+  settings: {
+    register(namespace: string, schema: z<GenuiPromptSettings>): GenuiPromptSettingsScope
+  }
+}
+
 /**
  * Create the GenUI authoring guidance for the host system-prompt registry.
  * @returns The prompt text to register while the composer toggle is enabled.
@@ -67,7 +86,7 @@ function genuiPromptText(): string {
 }
 
 /**
- * Register the GenUI runtime and the on-demand authoring prompt toggle.
+ * Register the GenUI runtime and the authoring prompt toggle.
  * @param ctx - Cordis context with `systemPrompt` injected.
  * @param config - validated plugin config.
  */
@@ -82,8 +101,41 @@ export function apply(ctx: Context, config: Config): void {
     text: genuiPromptText(),
   }, systemPrompt)
 
-  // A disabled prompt must not survive plugin unload and re-enable.
-  ctx.effect(() => () => promptControl.set(false), 'dsh-genui: prompt toggle state')
+  // The endpoint must read through this indirection because settings attach
+  // asynchronously after the web route has already been registered.
+  let currentControl: Pick<GenuiPromptControl, 'isEnabled' | 'set'> = promptControl
+  let persistedAttached = false
+  const endpointControl: Pick<GenuiPromptControl, 'isEnabled' | 'set'> & { persisted(): boolean } = {
+    isEnabled: () => currentControl.isEnabled(),
+    set: enabled => currentControl.set(enabled),
+    persisted: () => persistedAttached,
+  }
+
+  // Authoring starts on; disposal keeps a reloaded plugin from leaking the section.
+  ctx.effect(() => {
+    promptControl.set(true)
+    return () => promptControl.set(false)
+  }, 'dsh-genui: prompt toggle state')
+
+  ctx.inject(['settings'], (settingsCtx) => {
+    const settings = (settingsCtx as Context & SettingsHost).settings
+    const scope = settings.register('dsh-genui', PromptSettings)
+    ctx.logger.debug('dsh-genui: settings service attached')
+    settingsCtx.effect(() => {
+      // Persist explicit clicks, but never write the unload-time cleanup state.
+      const persistedControl = createPersistedPromptControl(promptControl, scope, true, error => {
+        ctx.logger.warn('dsh-genui: failed to persist prompt state', error)
+      }, enabled => {
+        ctx.logger.debug('dsh-genui: persisting prompt state enabled=%s', String(enabled))
+      })
+      currentControl = persistedControl
+      persistedAttached = true
+      return () => {
+        currentControl = promptControl
+        persistedAttached = false
+      }
+    }, 'dsh-genui: persisted prompt control')
+  })
 
   const artifacts = genuiRuntimeArtifactPaths()
   const webServer = (ctx as Context & { webServer: WebServer }).webServer
@@ -91,7 +143,7 @@ export function apply(ctx: Context, config: Config): void {
     () => webServer.register({
       kind: 'exact',
       path: GENUI_PROMPT_CONTROL_URL,
-      handler: createGenuiPromptControlHandler(promptControl),
+      handler: createGenuiPromptControlHandler(endpointControl),
     }),
     'dsh-genui: prompt toggle state endpoint',
   )

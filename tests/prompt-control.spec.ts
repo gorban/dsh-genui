@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createGenuiPromptControl,
   createGenuiPromptControlHandler,
+  createPersistedPromptControl,
 } from '../src/prompt-control.ts'
 
 const section = { name: 'genui:cards', order: 80, text: 'GenUI prompt' }
@@ -64,6 +65,76 @@ describe('createGenuiPromptControl', () => {
     expect(control.set(false)).toBe(false)
     expect(dispose).toHaveBeenCalledTimes(1)
     expect(control.isEnabled()).toBe(false)
+  })
+})
+
+describe('createPersistedPromptControl', () => {
+  it('initializes from settings and mirrors explicit changes', async () => {
+    const dispose = vi.fn()
+    const registered: Array<Record<string, unknown>> = []
+    const updates: Array<{ enabled: boolean }> = []
+    let stored = { enabled: false }
+    const control = createPersistedPromptControl(
+      createGenuiPromptControl(section, {
+        section(values) {
+          registered.push(values)
+          return dispose
+        },
+      }),
+      {
+        get: () => stored,
+        update(patch) {
+          updates.push(patch)
+          stored = { ...stored, ...patch }
+          return Promise.resolve()
+        },
+      },
+      true,
+    )
+
+    expect(control.isEnabled()).toBe(false)
+    expect(registered).toEqual([])
+
+    expect(control.set(true)).toBe(true)
+    await Promise.resolve()
+    expect(updates).toEqual([{ enabled: true }])
+    expect(control.isEnabled()).toBe(true)
+
+    expect(control.set(false)).toBe(false)
+    await Promise.resolve()
+    expect(updates).toEqual([{ enabled: true }, { enabled: false }])
+    expect(control.isEnabled()).toBe(false)
+  })
+
+  it('falls back to the supplied default for a malformed stored value', () => {
+    const control = createPersistedPromptControl(
+      createGenuiPromptControl(section, { section: () => () => {} }),
+      {
+        get: () => ({ enabled: undefined as unknown as boolean }),
+        update: () => Promise.resolve(),
+      },
+      true,
+    )
+
+    expect(control.isEnabled()).toBe(true)
+  })
+
+  it('keeps the runtime state when persistence fails', async () => {
+    const onError = vi.fn()
+    const control = createPersistedPromptControl(
+      createGenuiPromptControl(section, { section: () => () => {} }),
+      {
+        get: () => ({ enabled: true }),
+        update: () => Promise.reject(new Error('persist-failed')),
+      },
+      true,
+      onError,
+    )
+
+    expect(control.set(false)).toBe(false)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(control.isEnabled()).toBe(false)
+    expect(onError).toHaveBeenCalledTimes(1)
   })
 })
 
