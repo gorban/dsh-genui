@@ -1,12 +1,12 @@
 {
-  "name": "dsh-genui",
+  "name": "@gorban/dsh-genui",
   "version": "0.2.1",
   "packageManager": "pnpm@11.21.0",
-  "description": "GenUI for DeepSeek Harness: interactive charts, forms, calculators, dashboards, and mini apps rendered inline in assistant replies, with actions that flow back to the model.",
+  "description": "GenUI for DeepSeek Harness: interactive charts, forms, calculators, dashboards, and mini apps rendered inline in assistant replies, with actions that flow back to the model. (Fork: adds XML-tag format support and consecutive-schema merging.)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lhuans/dsh-genui.git"
+    "url": "git+ssh://git@github.com/gorban/dsh-genui.git"
   },
   "homepage": "https://lhuans.github.io/dsh-genui/",
   "bugs": {

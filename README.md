@@ -1,6 +1,16 @@
-# dsh-genui
+# @gorban/dsh-genui
+
+> **Fork notice**: This is a fork of [lhuans/dsh-genui](https://github.com/lhuans/dsh-genui) that adds support for both ````schemaJson` fences and `<schemaJson>` XML tags, plus consecutive-schema merging to prevent rendering crashes. Available on npm as `@gorban/dsh-genui` while a [pull request](https://github.com/lhuans/dsh-genui/pulls) is pending upstream.
 
 **English** · [简体中文](https://github.com/lhuans/dsh-genui/blob/main/README.zh-CN.md)
+
+### Install the fork
+
+```sh
+npx @deepseek-ai/dsh plugin --profile web add @gorban/dsh-genui@latest
+```
+
+---
 
 > Turn [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) replies from a wall of text into an interface you can actually click.
 
@@ -190,6 +200,15 @@ This also requires a restart to take effect.
 **Still showing a code block after installing?**
 
 Nine times out of ten you skipped the restart or you're still in an old session. Run through all four steps: stop, restart, refresh, new conversation.
+
+**Why do I see raw `<schemaJson>` tags or backticks instead of a rendered card?**
+
+GenUI accepts two formats for the schema block:
+
+- ````schemaJson … ```` (backtick fence — GenUI-native format)
+- `<schemaJson> … </schemaJson>` (XML-style tags — DSH boot-context format)
+
+Both are rendered identically if the model uses either one. If you see *neither* format rendered and the raw code is visible, the plugin isn't active yet — follow the restart steps above.
 
 **`pnpm not found on PATH`?**
 
