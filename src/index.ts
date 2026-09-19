@@ -5,8 +5,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { materialsMeta } from '@opentiny/genui-sdk-materials-vue-opentiny-vue/meta'
-import { genPrompt } from '@opentiny/genui-sdk-core'
+import { GENUI_PROMPT_EN } from './prompt/genui-prompt.en.ts'
 import {
   createGenuiPromptControl,
   createGenuiPromptControlHandler,
@@ -60,29 +59,17 @@ interface SettingsHost {
 }
 
 /**
- * Create the GenUI authoring guidance for the host system-prompt registry.
+ * The GenUI authoring guidance for the host system-prompt registry.
+ *
+ * This is the fork's own English prompt, frozen by `scripts/gen-prompt-en.mjs`.
+ * Upstream `@opentiny/genui-sdk-core` has no English prompt: no locale option,
+ * no `en_US` material metadata, and no English template in its dist. Calling
+ * `genPrompt()` would therefore register a Chinese system prompt, which drives
+ * the model to answer in Chinese.
  * @returns The prompt text to register while the composer toggle is enabled.
  */
 function genuiPromptText(): string {
-  return genPrompt('Vue', materialsMeta, {
-    customActions: [
-      {
-        name: 'continueChat',
-        description:
-          'Continue the conversation (e.g. form submit). Pass a short message only; the host appends the card state (formData, etc.) automatically.',
-        parameters: {
-          type: 'object',
-          properties: {
-            message: {
-              type: 'string',
-              description: 'Short follow-up text (button label or summary). Do not put form fields here.',
-            },
-          },
-          required: ['message'],
-        },
-      },
-    ],
-  })
+  return GENUI_PROMPT_EN
 }
 
 /**
