@@ -57,7 +57,7 @@ export const GenuiAssistantNodeView = memo(function GenuiAssistantNodeView({
         } catch {
           stateJson = '{}'
         }
-        const draft = `${message},相关参数为：${stateJson}`
+        const draft = `${message}, with parameters: ${stateJson}`
         inputActions.setDraft(draft)
         inputActions.submit()
       },
